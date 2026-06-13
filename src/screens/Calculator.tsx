@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Numpad } from '../components/Numpad'
 import { CustomerSearch } from '../components/CustomerSearch'
 import { evalExpression } from '../lib/eval'
+import { useSettings } from '../context/SettingsContext'
+import { getTranslations, formatAmount } from '../lib/i18n'
 import type { Customer } from '../db/customers'
 
 interface CalcState {
@@ -47,7 +49,6 @@ function exprFontSize(expr: string): string {
   return 'text-xl'
 }
 
-// Expose shared state via navigation state so Confirm screen can read it
 export interface CalcSessionState {
   expression: string
   customer: Customer | null
@@ -58,6 +59,8 @@ export function Calculator() {
   const navigate = useNavigate()
   const [state, dispatch] = useReducer(calcReducer, { expression: '', customer: null })
   const [showSearch, setShowSearch] = useState(false)
+  const { locale } = useSettings()
+  const t = getTranslations(locale)
 
   const result = evalExpression(state.expression)
   const canConfirm = result !== null && result > 0
@@ -79,41 +82,47 @@ export function Calculator() {
   return (
     <div className="flex flex-col h-full">
       {/* Nav bar */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-        <span className="text-white font-semibold text-lg">Shop Calc</span>
+      <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+        <span className="text-[var(--text-1)] font-semibold text-lg">{t.appName}</span>
         <div className="flex gap-4">
           <button
             onClick={() => navigate('/history')}
-            className="text-indigo-400 text-sm font-medium"
+            className="text-[var(--accent)] text-sm font-medium"
           >
-            History
+            {t.history}
           </button>
           <button
             onClick={() => navigate('/customers')}
-            className="text-indigo-400 text-sm font-medium"
+            className="text-[var(--accent)] text-sm font-medium"
           >
-            Customers
+            {t.customers}
+          </button>
+          <button
+            onClick={() => navigate('/settings')}
+            className="text-[var(--accent)] text-sm font-medium"
+          >
+            {t.settings}
           </button>
         </div>
       </header>
 
       {/* Customer bar + confirm button */}
-      <div className="flex items-center border-b border-gray-800">
+      <div className="flex items-center border-b border-[var(--border)]">
         <button
           onClick={() => setShowSearch(true)}
           className="flex-1 flex items-center gap-2 px-4 py-3 text-left"
         >
-          <span className="text-gray-500 text-sm">Customer:</span>
-          <span className={`flex-1 font-medium ${state.customer ? 'text-indigo-300' : 'text-gray-500'}`}>
-            {state.customer ? state.customer.name : 'Walk-in (tap to assign)'}
+          <span className="text-[var(--text-3)] text-sm">{t.customer}</span>
+          <span className={`flex-1 font-medium ${state.customer ? 'text-[var(--accent-txt)]' : 'text-[var(--text-3)]'}`}>
+            {state.customer ? state.customer.name : t.walkin}
           </span>
-          <span className="text-gray-600 text-xs">▾</span>
+          <span className="text-[var(--text-4)] text-xs">▾</span>
         </button>
         <button
           onClick={handleConfirm}
           disabled={!canConfirm}
-          className={`px-5 py-3 text-2xl font-bold border-l border-gray-800 ${
-            canConfirm ? 'text-emerald-400' : 'text-gray-700'
+          className={`px-5 py-3 text-2xl font-bold border-l border-[var(--border)] ${
+            canConfirm ? 'text-[var(--confirm-t)]' : 'text-[var(--text-4)]'
           }`}
         >
           ✓
@@ -123,13 +132,13 @@ export function Calculator() {
       {/* Expression display */}
       <div className="flex-1 flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
         <div className="w-full overflow-hidden text-right">
-          <span className={`text-white font-mono tracking-tight whitespace-nowrap ${exprFontSize(state.expression)}`}>
-            {state.expression || <span className="text-gray-600">0</span>}
+          <span className={`text-[var(--text-1)] font-mono tracking-tight whitespace-nowrap ${exprFontSize(state.expression)}`}>
+            {state.expression || <span className="text-[var(--text-4)]">0</span>}
           </span>
         </div>
-        <div className="text-gray-400 text-xl mt-1 font-mono">
+        <div className="text-[var(--text-2)] text-xl mt-1 font-mono">
           {result !== null && state.expression
-            ? `= ${result.toLocaleString('id-ID')}`
+            ? `= ${formatAmount(result, locale)}`
             : ''}
         </div>
       </div>

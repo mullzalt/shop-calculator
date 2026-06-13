@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCustomers } from '../hooks/useCustomers'
+import { useSettings } from '../context/SettingsContext'
+import { getTranslations, formatCurrency } from '../lib/i18n'
 import type { Customer } from '../db/customers'
 
 interface CustomerSearchProps {
@@ -13,6 +15,8 @@ export function CustomerSearch({ onSelect, onClose, selected }: CustomerSearchPr
   const [debounced, setDebounced] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const { customers, loading } = useCustomers(debounced)
+  const { locale } = useSettings()
+  const t = getTranslations(locale)
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(query), 300)
@@ -24,52 +28,51 @@ export function CustomerSearch({ onSelect, onClose, selected }: CustomerSearchPr
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-950/90 flex flex-col">
-      <div className="flex items-center gap-3 p-4 border-b border-gray-700">
-        <button onClick={onClose} className="text-gray-400 text-2xl leading-none px-1">✕</button>
+    <div className="fixed inset-0 z-50 bg-[var(--bg-overlay)] flex flex-col">
+      <div className="flex items-center gap-3 p-4 border-b border-[var(--border)]">
+        <button onClick={onClose} className="text-[var(--text-2)] text-2xl leading-none px-1">✕</button>
         <input
           ref={inputRef}
           type="text"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Search customer..."
-          className="flex-1 bg-gray-800 text-white rounded-xl px-4 py-2 outline-none text-base"
+          placeholder={t.searchCustomer}
+          className="flex-1 bg-[var(--bg-input)] text-[var(--text-1)] rounded-xl px-4 py-2 outline-none text-base"
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Walk-in option */}
+      <div className="flex-1 overflow-y-auto bg-[var(--bg-base)]">
         <button
           onClick={() => { onSelect(null); onClose() }}
-          className={`w-full text-left px-5 py-4 border-b border-gray-800 flex items-center gap-3 ${!selected ? 'bg-indigo-900/40' : ''}`}
+          className={`w-full text-left px-5 py-4 border-b border-[var(--border)] flex items-center gap-3 ${!selected ? 'bg-[var(--accent-sub)]' : ''}`}
         >
-          <span className="text-gray-400 text-sm">Walk-in customer (no assignment)</span>
-          {!selected && <span className="ml-auto text-indigo-400 text-sm">✓ current</span>}
+          <span className="text-[var(--text-2)] text-sm">{t.walkinOption}</span>
+          {!selected && <span className="ml-auto text-[var(--accent)] text-sm">{t.currentSelection}</span>}
         </button>
 
         {loading && (
-          <div className="text-center py-10 text-gray-500">Loading…</div>
+          <div className="text-center py-10 text-[var(--text-3)]">{t.loading}</div>
         )}
 
         {!loading && customers.map(c => (
           <button
             key={c.id}
             onClick={() => { onSelect(c); onClose() }}
-            className={`w-full text-left px-5 py-4 border-b border-gray-800 flex items-center justify-between ${selected?.id === c.id ? 'bg-indigo-900/40' : ''}`}
+            className={`w-full text-left px-5 py-4 border-b border-[var(--border)] flex items-center justify-between ${selected?.id === c.id ? 'bg-[var(--accent-sub)]' : ''}`}
           >
             <div>
-              <div className="text-white font-medium">{c.name}</div>
-              <div className="text-gray-500 text-xs mt-0.5">
-                Total: Rp {c.total_spend.toLocaleString('id-ID')}
-                {c.last_transaction && ` · Last: ${new Date(c.last_transaction).toLocaleDateString('id-ID')}`}
+              <div className="text-[var(--text-1)] font-medium">{c.name}</div>
+              <div className="text-[var(--text-3)] text-xs mt-0.5">
+                Total: {formatCurrency(c.total_spend, locale)}
+                {c.last_transaction && ` · ${t.lastTransaction}: ${new Date(c.last_transaction).toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-US')}`}
               </div>
             </div>
-            {selected?.id === c.id && <span className="text-indigo-400 text-sm">✓</span>}
+            {selected?.id === c.id && <span className="text-[var(--accent)] text-sm">✓</span>}
           </button>
         ))}
 
         {!loading && customers.length === 0 && debounced && (
-          <div className="text-center py-10 text-gray-500">No customers found for "{debounced}"</div>
+          <div className="text-center py-10 text-[var(--text-3)]">{t.noCustomersFound(debounced)}</div>
         )}
       </div>
     </div>

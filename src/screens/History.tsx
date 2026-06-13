@@ -5,17 +5,12 @@ import { updateTransaction, deleteTransaction } from '../db/transactions'
 import type { Transaction, TransactionFilter } from '../db/transactions'
 import { ExportModal } from '../components/ExportModal'
 import { CustomerSearch } from '../components/CustomerSearch'
+import { useSettings } from '../context/SettingsContext'
+import { getTranslations, formatAmount, formatDateTime } from '../lib/i18n'
 import type { Customer } from '../db/customers'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('id-ID', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
 }
 
 interface EditState {
@@ -37,6 +32,9 @@ export function History() {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [showEditCustomer, setShowEditCustomer] = useState(false)
 
+  const { locale } = useSettings()
+  const t = getTranslations(locale)
+
   const filter: TransactionFilter = {
     customerId: filterCustomer?.id ?? undefined,
     dateFrom: dateFrom || undefined,
@@ -45,15 +43,15 @@ export function History() {
 
   const { transactions, total, totalAmount, loading, refresh, pageSize } = useTransactions(filter, page)
 
-  function startEdit(t: Transaction) {
-    const customer = t.customer_id != null
-      ? { id: t.customer_id, name: t.customer_name ?? '' } as Customer
+  function startEdit(tx: Transaction) {
+    const customer = tx.customer_id != null
+      ? { id: tx.customer_id, name: tx.customer_name ?? '' } as Customer
       : null
     setEditState({
-      id: t.id,
-      expression: t.expression,
-      amount: String(t.amount),
-      customer_id: t.customer_id != null ? String(t.customer_id) : '',
+      id: tx.id,
+      expression: tx.expression,
+      amount: String(tx.amount),
+      customer_id: tx.customer_id != null ? String(tx.customer_id) : '',
       customer,
     })
   }
@@ -75,8 +73,8 @@ export function History() {
   }
 
   const filterLabel = [
-    dateFrom && `From ${dateFrom}`,
-    dateTo && `To ${dateTo}`,
+    dateFrom && `${t.filterFrom} ${dateFrom}`,
+    dateTo && `${t.filterTo} ${dateTo}`,
     filterCustomer?.name,
   ].filter(Boolean).join(' · ')
 
@@ -84,137 +82,137 @@ export function History() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
-        <button onClick={() => navigate('/')} className="text-indigo-400 text-sm">← Calc</button>
-        <span className="text-white font-semibold flex-1">History</span>
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
+        <button onClick={() => navigate('/')} className="text-[var(--accent)] text-sm">← {t.appName}</button>
+        <span className="text-[var(--text-1)] font-semibold flex-1">{t.historyTitle}</span>
         <button
           onClick={() => setShowExport(true)}
-          className="text-indigo-400 text-sm font-medium"
+          className="text-[var(--accent)] text-sm font-medium"
         >
-          Export
+          {t.export}
         </button>
       </header>
 
       {/* Filters */}
-      <div className="border-b border-gray-800 p-3 space-y-2">
+      <div className="border-b border-[var(--border)] p-3 space-y-2">
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="text-gray-500 text-xs block mb-1">From</label>
+            <label className="text-[var(--text-3)] text-xs block mb-1">{t.filterFrom}</label>
             <input
               type="date"
               value={dateFrom}
               onChange={e => { setDateFrom(e.target.value); setPage(0) }}
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none"
+              className="w-full bg-[var(--bg-card)] text-[var(--text-1)] rounded-lg px-3 py-2 text-sm outline-none"
             />
           </div>
           <div className="flex-1">
-            <label className="text-gray-500 text-xs block mb-1">To</label>
+            <label className="text-[var(--text-3)] text-xs block mb-1">{t.filterTo}</label>
             <input
               type="date"
               value={dateTo}
               onChange={e => { setDateTo(e.target.value); setPage(0) }}
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none"
+              className="w-full bg-[var(--bg-card)] text-[var(--text-1)] rounded-lg px-3 py-2 text-sm outline-none"
             />
           </div>
         </div>
         <div>
-          <label className="text-gray-500 text-xs block mb-1">Customer</label>
+          <label className="text-[var(--text-3)] text-xs block mb-1">{t.filterCustomer}</label>
           <button
             onClick={() => setShowCustomerFilter(true)}
-            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between"
+            className="w-full bg-[var(--bg-card)] text-[var(--text-1)] rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between"
           >
-            <span className={filterCustomer ? 'text-indigo-300' : 'text-gray-400'}>
-              {filterCustomer ? filterCustomer.name : 'All customers'}
+            <span className={filterCustomer ? 'text-[var(--accent-txt)]' : 'text-[var(--text-3)]'}>
+              {filterCustomer ? filterCustomer.name : t.allCustomers}
             </span>
-            <span className="text-gray-600 text-xs">▾</span>
+            <span className="text-[var(--text-4)] text-xs">▾</span>
           </button>
         </div>
       </div>
 
       {/* Summary bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-900/60 text-sm">
-        <span className="text-gray-500">{total} transaction{total !== 1 ? 's' : ''}</span>
-        <span className="text-white font-semibold">
-          Total: {totalAmount.toLocaleString('id-ID')}
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--bg-base)] text-sm border-b border-[var(--border)]">
+        <span className="text-[var(--text-3)]">{t.transactions(total)}</span>
+        <span className="text-[var(--text-1)] font-semibold">
+          {t.total}: {formatAmount(totalAmount, locale)}
         </span>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         {loading && (
-          <div className="text-center py-10 text-gray-500">Loading…</div>
+          <div className="text-center py-10 text-[var(--text-3)]">{t.loading}</div>
         )}
         {!loading && transactions.length === 0 && (
-          <div className="text-center py-10 text-gray-600">No transactions found</div>
+          <div className="text-center py-10 text-[var(--text-4)]">{t.noTransactionsFiltered}</div>
         )}
-        {transactions.map(t => (
-          <div key={t.id} className="border-b border-gray-800">
+        {transactions.map(tx => (
+          <div key={tx.id} className="border-b border-[var(--border)]">
             <button
-              onClick={() => { setEditState(null); startEdit(t) }}
+              onClick={() => { setEditState(null); startEdit(tx) }}
               className="w-full text-left px-4 py-3 flex items-start justify-between gap-2"
             >
               <div className="flex-1 min-w-0">
-                <div className="text-white font-semibold text-base">{t.amount.toLocaleString('id-ID')}</div>
-                <div className="text-gray-500 text-xs font-mono truncate">{t.expression}</div>
-                <div className="text-gray-600 text-xs mt-0.5">
-                  {t.customer_name ?? '—'} · {formatDateTime(t.created_at)}
+                <div className="text-[var(--text-1)] font-semibold text-base">{formatAmount(tx.amount, locale)}</div>
+                <div className="text-[var(--text-3)] text-xs font-mono truncate">{tx.expression}</div>
+                <div className="text-[var(--text-4)] text-xs mt-0.5">
+                  {tx.customer_name ?? t.walkinLabel} · {formatDateTime(tx.created_at, locale)}
                 </div>
               </div>
-              <span className="text-gray-600 text-xs mt-1">Edit</span>
+              <span className="text-[var(--text-4)] text-xs mt-1">{t.edit}</span>
             </button>
 
-            {editState?.id === t.id && (
-              <div className="px-4 pb-4 space-y-2 bg-gray-800/50">
+            {editState?.id === tx.id && (
+              <div className="px-4 pb-4 space-y-2 bg-[var(--bg-card)]">
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <label className="text-gray-500 text-xs block mb-1">Expression</label>
+                    <label className="text-[var(--text-3)] text-xs block mb-1">{t.expression}</label>
                     <input
                       type="text"
                       value={editState.expression}
                       onChange={e => setEditState(s => s ? { ...s, expression: e.target.value } : s)}
-                      className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none font-mono"
+                      className="w-full bg-[var(--bg-input)] text-[var(--text-1)] rounded-lg px-3 py-2 text-sm outline-none font-mono"
                     />
                   </div>
                   <div className="w-28">
-                    <label className="text-gray-500 text-xs block mb-1">Amount</label>
+                    <label className="text-[var(--text-3)] text-xs block mb-1">{t.amount}</label>
                     <input
                       type="number"
                       value={editState.amount}
                       onChange={e => setEditState(s => s ? { ...s, amount: e.target.value } : s)}
-                      className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none"
+                      className="w-full bg-[var(--bg-input)] text-[var(--text-1)] rounded-lg px-3 py-2 text-sm outline-none"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-gray-500 text-xs block mb-1">Customer</label>
+                  <label className="text-[var(--text-3)] text-xs block mb-1">{t.filterCustomer}</label>
                   <button
                     onClick={() => setShowEditCustomer(true)}
-                    className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between"
+                    className="w-full bg-[var(--bg-input)] text-[var(--text-1)] rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between"
                   >
-                    <span className={editState.customer ? 'text-indigo-300' : 'text-gray-400'}>
-                      {editState.customer ? editState.customer.name : 'Walk-in'}
+                    <span className={editState.customer ? 'text-[var(--accent-txt)]' : 'text-[var(--text-3)]'}>
+                      {editState.customer ? editState.customer.name : t.walkIn}
                     </span>
-                    <span className="text-gray-600 text-xs">▾</span>
+                    <span className="text-[var(--text-4)] text-xs">▾</span>
                   </button>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={saveEdit}
-                    className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium"
+                    className="flex-1 bg-[var(--accent-bg)] text-white rounded-lg py-2 text-sm font-medium"
                   >
-                    Save
+                    {t.save}
                   </button>
                   <button
                     onClick={() => setEditState(null)}
-                    className="flex-1 bg-gray-700 text-white rounded-lg py-2 text-sm font-medium"
+                    className="flex-1 bg-[var(--bg-input)] text-[var(--text-1)] rounded-lg py-2 text-sm font-medium"
                   >
-                    Cancel
+                    {t.cancel}
                   </button>
                   <button
-                    onClick={() => handleDelete(t.id)}
-                    className="bg-red-900/60 text-red-300 rounded-lg py-2 px-4 text-sm font-medium"
+                    onClick={() => handleDelete(tx.id)}
+                    className="bg-[var(--danger-bg)] text-[var(--danger-t)] rounded-lg py-2 px-4 text-sm font-medium"
                   >
-                    Delete
+                    {t.delete}
                   </button>
                 </div>
               </div>
@@ -225,23 +223,23 @@ export function History() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border)]">
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="text-indigo-400 disabled:text-gray-600 text-sm"
+            className="text-[var(--accent)] disabled:text-[var(--text-4)] text-sm"
           >
-            ← Prev
+            {t.prevPage}
           </button>
-          <span className="text-gray-500 text-sm">
+          <span className="text-[var(--text-3)] text-sm">
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="text-indigo-400 disabled:text-gray-600 text-sm"
+            className="text-[var(--accent)] disabled:text-[var(--text-4)] text-sm"
           >
-            Next →
+            {t.nextPage}
           </button>
         </div>
       )}

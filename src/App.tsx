@@ -5,13 +5,15 @@ import { Capacitor } from '@capacitor/core'
 import { DBContext } from './hooks/useDB'
 import { initDB } from './db/client'
 import type { DbAdapter } from './db/adapter'
+import { SettingsProvider } from './context/SettingsContext'
+import { ToastProvider } from './context/ToastContext'
 import { Calculator } from './screens/Calculator'
 import { Confirm } from './screens/Confirm'
 import { History } from './screens/History'
 import { Customers } from './screens/Customers'
 import { CustomerDetail } from './screens/CustomerDetail'
+import { Settings } from './screens/Settings'
 
-// Must be inside BrowserRouter to access useNavigate
 function AppShell() {
   const navigate = useNavigate()
 
@@ -37,6 +39,7 @@ function AppShell() {
         <Route path="/history" element={<History />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerDetail />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
   )
@@ -54,7 +57,7 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen text-red-400 px-6 text-center">
+      <div className="flex items-center justify-center h-screen text-[var(--danger-t)] px-6 text-center">
         Failed to initialize database: {error}
       </div>
     )
@@ -62,17 +65,21 @@ export default function App() {
 
   if (!db) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-500">
+      <div className="flex items-center justify-center h-screen text-[var(--text-3)]">
         Loading…
       </div>
     )
   }
 
   return (
-    <DBContext.Provider value={db}>
-      <BrowserRouter>
-        <AppShell />
-      </BrowserRouter>
-    </DBContext.Provider>
+    <SettingsProvider>
+      <DBContext.Provider value={db}>
+        <BrowserRouter>
+          <ToastProvider>
+            <AppShell />
+          </ToastProvider>
+        </BrowserRouter>
+      </DBContext.Provider>
+    </SettingsProvider>
   )
 }

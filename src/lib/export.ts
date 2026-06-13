@@ -4,31 +4,31 @@ import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import type { Transaction } from '../db/transactions'
+import type { Locale, Translations } from './i18n'
+import { formatDateTime } from './i18n'
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('id-ID', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
-
-function toRows(transactions: Transaction[]): string[][] {
+function toRows(transactions: Transaction[], locale: Locale): string[][] {
   return transactions.map(t => [
-    formatDate(t.created_at),
+    formatDateTime(t.created_at, locale),
     t.customer_name ?? '—',
     t.expression,
     String(t.amount),
   ])
 }
 
-export async function exportCSV(transactions: Transaction[], filename = 'transactions.csv') {
-  const header = 'Date,Customer,Expression,Amount\n'
-  const rows = transactions.map(t =>
+export async function exportCSV(
+  transactions: Transaction[],
+  filename = 'transactions.csv',
+  locale: Locale = 'id',
+  t: Pick<Translations, 'exportColDate' | 'exportColCustomer' | 'exportColExpr' | 'exportColAmount'>,
+) {
+  const header = `${t.exportColDate},${t.exportColCustomer},${t.exportColExpr},${t.exportColAmount}\n`
+  const rows = transactions.map(tx =>
     [
-      `"${formatDate(t.created_at)}"`,
-      `"${(t.customer_name ?? '').replace(/"/g, '""')}"`,
-      `"${t.expression.replace(/"/g, '""')}"`,
-      String(t.amount),
+      `"${formatDateTime(tx.created_at, locale)}"`,
+      `"${(tx.customer_name ?? '').replace(/"/g, '""')}"`,
+      `"${tx.expression.replace(/"/g, '""')}"`,
+      String(tx.amount),
     ].join(','),
   )
   const csv = header + rows.join('\n')
@@ -37,7 +37,7 @@ export async function exportCSV(transactions: Transaction[], filename = 'transac
     const path = filename
     await Filesystem.writeFile({ path, data: btoa(unescape(encodeURIComponent(csv))), directory: Directory.Cache, encoding: undefined as unknown as never })
     const { uri } = await Filesystem.getUri({ path, directory: Directory.Cache })
-    await Share.share({ title: 'Transaction Report', url: uri })
+    await Share.share({ title: t.exportColDate, url: uri })
   } else {
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -51,10 +51,12 @@ export async function exportPDF(
   transactions: Transaction[],
   subtitle = '',
   filename = 'transactions.pdf',
+  locale: Locale = 'id',
+  t: Pick<Translations, 'exportReportTitle' | 'exportColDate' | 'exportColCustomer' | 'exportColExpr' | 'exportColAmount'>,
 ) {
   const doc = new jsPDF()
   doc.setFontSize(16)
-  doc.text('Transaction Report', 14, 16)
+  doc.text(t.exportReportTitle, 14, 16)
   if (subtitle) {
     doc.setFontSize(10)
     doc.text(subtitle, 14, 24)
@@ -62,8 +64,8 @@ export async function exportPDF(
 
   autoTable(doc, {
     startY: subtitle ? 30 : 22,
-    head: [['Date', 'Customer', 'Expression', 'Amount']],
-    body: toRows(transactions),
+    head: [[t.exportColDate, t.exportColCustomer, t.exportColExpr, t.exportColAmount]],
+    body: toRows(transactions, locale),
     styles: { fontSize: 9 },
     columnStyles: { 3: { halign: 'right' } },
   })
@@ -73,7 +75,7 @@ export async function exportPDF(
     const path = filename
     await Filesystem.writeFile({ path, data: base64, directory: Directory.Cache, encoding: undefined as unknown as never })
     const { uri } = await Filesystem.getUri({ path, directory: Directory.Cache })
-    await Share.share({ title: 'Transaction Report', url: uri })
+    await Share.share({ title: t.exportReportTitle, url: uri })
   } else {
     doc.save(filename)
   }

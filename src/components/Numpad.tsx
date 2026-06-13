@@ -15,7 +15,8 @@ type Key = {
 const KEYS: Key[][] = [
   [
     { label: "C", value: "C", danger: true },
-    { label: "⌫", value: "DEL", wide: true },
+    { label: "(", value: "(" },
+    { label: ")", value: ")" },
     { label: "÷", value: "÷", accent: true },
   ],
   [
@@ -37,9 +38,9 @@ const KEYS: Key[][] = [
     { label: "+", value: "+", accent: true },
   ],
   [
-    { label: "(", value: "(" },
-    { label: ")", value: ")" },
+    { label: "00", value: "00" },
     { label: "0", value: "0" },
+    { label: "⌫", value: "DEL" },
     { label: "=", value: "=" },
   ],
 ];
@@ -72,9 +73,9 @@ export function Numpad({ onKey }: NumpadProps) {
         const isDel = key.value === "DEL";
         const base =
           "h-16 rounded-2xl text-2xl font-semibold select-none active:scale-95 transition-transform flex items-center justify-center cursor-pointer";
-        let color = "bg-gray-700 text-white";
-        if (key.danger) color = "bg-red-900/60 text-red-300";
-        else if (key.accent) color = "bg-indigo-800/70 text-indigo-200";
+        let color = "bg-[var(--bg-input)] text-[var(--text-1)]";
+        if (key.danger) color = "bg-[var(--danger-bg)] text-[var(--danger-t)]";
+        else if (key.accent) color = "bg-[var(--accent-hi)] text-[var(--accent-txt)]";
 
         return (
           <button
