@@ -29,7 +29,12 @@ function calcReducer(state: CalcState, action: CalcAction): CalcState {
         const r = evalExpression(state.expression)
         return r !== null ? { ...state, expression: String(r) } : state
       }
-      // map display minus to ASCII minus for eval, but keep display version in expression
+      const isDigit = /^[0-9]$/.test(key)
+      const lastTokenIsZero = /(?:^|[+\-×÷−(])0$/.test(state.expression)
+      if (isDigit && lastTokenIsZero) {
+        if (key === '0') return state
+        return { ...state, expression: state.expression.slice(0, -1) + key }
+      }
       return { ...state, expression: state.expression + key }
     }
   }
@@ -92,17 +97,28 @@ export function Calculator() {
         </div>
       </header>
 
-      {/* Customer bar */}
-      <button
-        onClick={() => setShowSearch(true)}
-        className="flex items-center gap-2 px-4 py-3 border-b border-gray-800 text-left"
-      >
-        <span className="text-gray-500 text-sm">Customer:</span>
-        <span className={`flex-1 font-medium ${state.customer ? 'text-indigo-300' : 'text-gray-500'}`}>
-          {state.customer ? state.customer.name : 'Walk-in (tap to assign)'}
-        </span>
-        <span className="text-gray-600 text-xs">▾</span>
-      </button>
+      {/* Customer bar + confirm button */}
+      <div className="flex items-center border-b border-gray-800">
+        <button
+          onClick={() => setShowSearch(true)}
+          className="flex-1 flex items-center gap-2 px-4 py-3 text-left"
+        >
+          <span className="text-gray-500 text-sm">Customer:</span>
+          <span className={`flex-1 font-medium ${state.customer ? 'text-indigo-300' : 'text-gray-500'}`}>
+            {state.customer ? state.customer.name : 'Walk-in (tap to assign)'}
+          </span>
+          <span className="text-gray-600 text-xs">▾</span>
+        </button>
+        <button
+          onClick={handleConfirm}
+          disabled={!canConfirm}
+          className={`px-5 py-3 text-2xl font-bold border-l border-gray-800 ${
+            canConfirm ? 'text-emerald-400' : 'text-gray-700'
+          }`}
+        >
+          ✓
+        </button>
+      </div>
 
       {/* Expression display */}
       <div className="flex-1 flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
@@ -119,7 +135,7 @@ export function Calculator() {
       </div>
 
       {/* Numpad */}
-      <Numpad onKey={handleKey} onConfirm={handleConfirm} confirmDisabled={!canConfirm} />
+      <Numpad onKey={handleKey} />
 
       {showSearch && (
         <CustomerSearch
