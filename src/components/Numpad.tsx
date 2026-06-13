@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+
 interface NumpadProps {
   onKey: (key: string) => void
   onConfirm: () => void
@@ -31,17 +33,34 @@ const KEYS: Key[][] = [
     { label: '+', value: '+', accent: true },
   ],
   [
-    { label: '0', value: '0', wide: true },
+    { label: '0', value: '0' },
+    { label: '00', value: '00' },
     { label: '=', value: '=' },
     { label: '✓', value: 'CONFIRM', confirm: true },
   ],
 ]
 
 export function Numpad({ onKey, onConfirm, confirmDisabled }: NumpadProps) {
+  const repeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const delayRef  = useRef<ReturnType<typeof setTimeout>  | null>(null)
+
+  function startRepeat(fn: () => void) {
+    fn()
+    delayRef.current = setTimeout(() => {
+      repeatRef.current = setInterval(fn, 80)
+    }, 400)
+  }
+
+  function stopRepeat() {
+    if (delayRef.current)  { clearTimeout(delayRef.current);   delayRef.current  = null }
+    if (repeatRef.current) { clearInterval(repeatRef.current); repeatRef.current = null }
+  }
+
   return (
     <div className="grid grid-cols-4 gap-2 p-3">
       {KEYS.flat().map((key) => {
         const isConfirm = key.value === 'CONFIRM'
+        const isDel = key.value === 'DEL'
         const base =
           'h-16 rounded-2xl text-2xl font-semibold select-none active:scale-95 transition-transform flex items-center justify-center cursor-pointer'
         let color = 'bg-gray-700 text-white'
@@ -56,16 +75,16 @@ export function Numpad({ onKey, onConfirm, confirmDisabled }: NumpadProps) {
           <button
             key={key.value}
             className={`${base} ${color}${key.wide ? ' col-span-2' : ''}`}
-            // Confirm uses onClick so the full tap cycle completes before
-            // navigating — prevents touch bleed onto the next screen's save button.
-            // All other keys use onPointerDown for instant response.
             {...(isConfirm
+              ? { onClick: () => { if (!confirmDisabled) onConfirm() } }
+              : isDel
               ? {
-                  onClick: () => { if (!confirmDisabled) onConfirm() },
+                  onPointerDown: (e) => { e.preventDefault(); startRepeat(() => onKey('DEL')) },
+                  onPointerUp: stopRepeat,
+                  onPointerLeave: stopRepeat,
                 }
-              : {
-                  onPointerDown: (e) => { e.preventDefault(); onKey(key.value) },
-                })}
+              : { onPointerDown: (e) => { e.preventDefault(); onKey(key.value) } }
+            )}
             disabled={isConfirm && confirmDisabled}
           >
             {key.label}
