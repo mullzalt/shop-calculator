@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android:sync": "npm run build && cap sync android",
+    "android:debug": "npm run android:sync && cd android && JAVA_HOME=$HOME/.sdkman/candidates/java/21.0.7-tem ./gradlew assembleDebug",
+    "android:release": "npm run android:sync && cap build android --androidreleasetype APK"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^8.1.0",

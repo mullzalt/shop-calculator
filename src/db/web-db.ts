@@ -53,8 +53,8 @@ export async function createWebDB(): Promise<DbAdapter> {
     async query(sql, params = []) {
       const stmt = sqlDb.prepare(sql)
       stmt.bind(params)
-      const rows: Record<string, unknown>[] = []
-      while (stmt.step()) rows.push(stmt.getAsObject() as Record<string, unknown>)
+      const rows: any[] = [] // eslint-disable-line @typescript-eslint/no-explicit-any
+      while (stmt.step()) rows.push(stmt.getAsObject())
       stmt.free()
       return { values: rows }
     },
