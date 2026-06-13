@@ -9,8 +9,7 @@ type Key = { label: string; value: string; wide?: boolean; accent?: boolean; con
 const KEYS: Key[][] = [
   [
     { label: 'C', value: 'C', danger: true },
-    { label: '(', value: '(' },
-    { label: ')', value: ')' },
+    { label: '⌫', value: 'DEL', wide: true },
     { label: '÷', value: '÷', accent: true },
   ],
   [
@@ -32,8 +31,7 @@ const KEYS: Key[][] = [
     { label: '+', value: '+', accent: true },
   ],
   [
-    { label: '⌫', value: 'DEL' },
-    { label: '0', value: '0' },
+    { label: '0', value: '0', wide: true },
     { label: '=', value: '=' },
     { label: '✓', value: 'CONFIRM', confirm: true },
   ],
@@ -57,7 +55,7 @@ export function Numpad({ onKey, onConfirm, confirmDisabled }: NumpadProps) {
         return (
           <button
             key={key.value}
-            className={`${base} ${color}`}
+            className={`${base} ${color}${key.wide ? ' col-span-2' : ''}`}
             // Confirm uses onClick so the full tap cycle completes before
             // navigating — prevents touch bleed onto the next screen's save button.
             // All other keys use onPointerDown for instant response.

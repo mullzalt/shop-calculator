@@ -30,7 +30,7 @@ function AppShell() {
   }, [navigate])
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto">
+    <div className="flex flex-col h-screen">
       <Routes>
         <Route path="/" element={<Calculator />} />
         <Route path="/confirm" element={<Confirm />} />

@@ -25,7 +25,10 @@ function calcReducer(state: CalcState, action: CalcAction): CalcState {
       const { key } = action
       if (key === 'C') return { ...state, expression: '' }
       if (key === 'DEL') return { ...state, expression: state.expression.slice(0, -1) }
-      if (key === '=') return state // result is shown in preview; expression stays
+      if (key === '=') {
+        const r = evalExpression(state.expression)
+        return r !== null ? { ...state, expression: String(r) } : state
+      }
       // map display minus to ASCII minus for eval, but keep display version in expression
       return { ...state, expression: state.expression + key }
     }
@@ -104,7 +107,7 @@ export function Calculator() {
       {/* Expression display */}
       <div className="flex-1 flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
         <div className="w-full overflow-hidden text-right">
-          <span className={`text-white font-mono tracking-tight break-all ${exprFontSize(state.expression)}`}>
+          <span className={`text-white font-mono tracking-tight whitespace-nowrap ${exprFontSize(state.expression)}`}>
             {state.expression || <span className="text-gray-600">0</span>}
           </span>
         </div>
