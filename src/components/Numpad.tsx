@@ -58,14 +58,16 @@ export function Numpad({ onKey, onConfirm, confirmDisabled }: NumpadProps) {
           <button
             key={key.value}
             className={`${base} ${color}`}
-            onPointerDown={(e) => {
-              e.preventDefault()
-              if (isConfirm) {
-                if (!confirmDisabled) onConfirm()
-              } else {
-                onKey(key.value)
-              }
-            }}
+            // Confirm uses onClick so the full tap cycle completes before
+            // navigating — prevents touch bleed onto the next screen's save button.
+            // All other keys use onPointerDown for instant response.
+            {...(isConfirm
+              ? {
+                  onClick: () => { if (!confirmDisabled) onConfirm() },
+                }
+              : {
+                  onPointerDown: (e) => { e.preventDefault(); onKey(key.value) },
+                })}
             disabled={isConfirm && confirmDisabled}
           >
             {key.label}

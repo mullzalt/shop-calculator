@@ -32,6 +32,13 @@ function calcReducer(state: CalcState, action: CalcAction): CalcState {
   }
 }
 
+function exprFontSize(expr: string): string {
+  if (expr.length <= 8)  return 'text-4xl'
+  if (expr.length <= 13) return 'text-3xl'
+  if (expr.length <= 18) return 'text-2xl'
+  return 'text-xl'
+}
+
 // Expose shared state via navigation state so Confirm screen can read it
 export interface CalcSessionState {
   expression: string
@@ -96,8 +103,8 @@ export function Calculator() {
 
       {/* Expression display */}
       <div className="flex-1 flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
-        <div className="w-full overflow-x-auto text-right">
-          <span className="text-white text-3xl font-mono tracking-tight whitespace-nowrap">
+        <div className="w-full overflow-hidden text-right">
+          <span className={`text-white font-mono tracking-tight break-all ${exprFontSize(state.expression)}`}>
             {state.expression || <span className="text-gray-600">0</span>}
           </span>
         </div>

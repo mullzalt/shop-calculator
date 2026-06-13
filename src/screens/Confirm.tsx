@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { CustomerSearch } from '../components/CustomerSearch'
 import { createTransaction } from '../db/transactions'
@@ -13,6 +13,12 @@ export function Confirm() {
   const [customer, setCustomer] = useState<Customer | null>(session?.customer ?? null)
   const [showSearch, setShowSearch] = useState(false)
   const [saving, setSaving] = useState(false)
+  // Guard against touch bleed from the numpad ✓ button landing on Save
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 400)
+    return () => clearTimeout(t)
+  }, [])
 
   if (!session) {
     navigate('/')
@@ -75,7 +81,7 @@ export function Confirm() {
       <div className="p-5">
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !ready}
           className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl py-4 text-lg font-semibold"
         >
           {saving ? 'Saving…' : 'Save & New Transaction'}

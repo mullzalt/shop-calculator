@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTransactions } from '../hooks/useTransactions'
-import { useCustomers } from '../hooks/useCustomers'
 import { updateTransaction, deleteTransaction } from '../db/transactions'
 import type { Transaction, TransactionFilter } from '../db/transactions'
 import { ExportModal } from '../components/ExportModal'
+import { CustomerSearch } from '../components/CustomerSearch'
+import type { Customer } from '../db/customers'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -22,32 +23,38 @@ interface EditState {
   expression: string
   amount: string
   customer_id: string
+  customer: Customer | null
 }
 
 export function History() {
   const navigate = useNavigate()
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState(todayISO())
-  const [filterCustomerId, setFilterCustomerId] = useState<number | null>(null)
+  const [filterCustomer, setFilterCustomer] = useState<Customer | null>(null)
+  const [showCustomerFilter, setShowCustomerFilter] = useState(false)
   const [page, setPage] = useState(0)
   const [showExport, setShowExport] = useState(false)
   const [editState, setEditState] = useState<EditState | null>(null)
+  const [showEditCustomer, setShowEditCustomer] = useState(false)
 
   const filter: TransactionFilter = {
-    customerId: filterCustomerId ?? undefined,
+    customerId: filterCustomer?.id ?? undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
   }
 
   const { transactions, total, totalAmount, loading, refresh, pageSize } = useTransactions(filter, page)
-  const { customers } = useCustomers()
 
   function startEdit(t: Transaction) {
+    const customer = t.customer_id != null
+      ? { id: t.customer_id, name: t.customer_name ?? '' } as Customer
+      : null
     setEditState({
       id: t.id,
       expression: t.expression,
       amount: String(t.amount),
-      customer_id: t.customer_id !== null && t.customer_id !== undefined ? String(t.customer_id) : '',
+      customer_id: t.customer_id != null ? String(t.customer_id) : '',
+      customer,
     })
   }
 
@@ -70,7 +77,7 @@ export function History() {
   const filterLabel = [
     dateFrom && `From ${dateFrom}`,
     dateTo && `To ${dateTo}`,
-    filterCustomerId && customers.find(c => c.id === filterCustomerId)?.name,
+    filterCustomer?.name,
   ].filter(Boolean).join(' · ')
 
   const totalPages = Math.ceil(total / pageSize)
@@ -112,16 +119,15 @@ export function History() {
         </div>
         <div>
           <label className="text-gray-500 text-xs block mb-1">Customer</label>
-          <select
-            value={filterCustomerId ?? ''}
-            onChange={e => { setFilterCustomerId(e.target.value ? Number(e.target.value) : null); setPage(0) }}
-            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none"
+          <button
+            onClick={() => setShowCustomerFilter(true)}
+            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between"
           >
-            <option value="">All customers</option>
-            {customers.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+            <span className={filterCustomer ? 'text-indigo-300' : 'text-gray-400'}>
+              {filterCustomer ? filterCustomer.name : 'All customers'}
+            </span>
+            <span className="text-gray-600 text-xs">▾</span>
+          </button>
         </div>
       </div>
 
@@ -181,16 +187,15 @@ export function History() {
                 </div>
                 <div>
                   <label className="text-gray-500 text-xs block mb-1">Customer</label>
-                  <select
-                    value={editState.customer_id}
-                    onChange={e => setEditState(s => s ? { ...s, customer_id: e.target.value } : s)}
-                    className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none"
+                  <button
+                    onClick={() => setShowEditCustomer(true)}
+                    className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between"
                   >
-                    <option value="">Walk-in</option>
-                    {customers.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    <span className={editState.customer ? 'text-indigo-300' : 'text-gray-400'}>
+                      {editState.customer ? editState.customer.name : 'Walk-in'}
+                    </span>
+                    <span className="text-gray-600 text-xs">▾</span>
+                  </button>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button
@@ -246,6 +251,22 @@ export function History() {
           filter={filter}
           filterLabel={filterLabel}
           onClose={() => setShowExport(false)}
+        />
+      )}
+
+      {showCustomerFilter && (
+        <CustomerSearch
+          selected={filterCustomer}
+          onSelect={c => { setFilterCustomer(c); setPage(0) }}
+          onClose={() => setShowCustomerFilter(false)}
+        />
+      )}
+
+      {showEditCustomer && editState && (
+        <CustomerSearch
+          selected={editState.customer}
+          onSelect={c => setEditState(s => s ? { ...s, customer: c, customer_id: c ? String(c.id) : '' } : s)}
+          onClose={() => setShowEditCustomer(false)}
         />
       )}
     </div>
