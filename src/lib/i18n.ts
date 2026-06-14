@@ -89,6 +89,7 @@ const translations = {
     printError: 'Gagal mencetak',
     printing: 'Mencetak…',
     printed: 'Tercetak ✓',
+    disconnect: 'Putuskan',
   },
   en: {
     appName: 'Shop Calc',
@@ -178,6 +179,7 @@ const translations = {
     printError: 'Print failed',
     printing: 'Printing…',
     printed: 'Printed ✓',
+    disconnect: 'Disconnect',
   },
 } as const
 

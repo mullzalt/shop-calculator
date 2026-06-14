@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
+import { CapacitorThermalPrinter } from 'capacitor-thermal-printer'
 import type { BluetoothDevice } from 'capacitor-thermal-printer'
 import { BluetoothScanModal } from '../components/BluetoothScanModal'
 import { useSettings } from '../context/SettingsContext'
@@ -61,6 +62,11 @@ export function Settings() {
   function onPrinterSelected(device: BluetoothDevice) {
     updatePrint({ printerAddress: device.address, printerName: device.name })
     setShowScan(false)
+  }
+
+  async function onDisconnect() {
+    await CapacitorThermalPrinter.disconnect().catch(() => {})
+    updatePrint({ printerAddress: null, printerName: null })
   }
 
   return (
@@ -178,18 +184,27 @@ export function Settings() {
           <SectionHeader label={t.printer} />
           <div className="bg-[var(--bg-card)] rounded-2xl overflow-hidden">
             {/* Select printer */}
-            <button
-              onClick={() => setShowScan(true)}
-              className="w-full text-left px-4 py-4 flex items-center justify-between border-b border-[var(--border)]"
-            >
-              <div>
+            <div className="flex items-center border-b border-[var(--border)]">
+              <button
+                onClick={() => setShowScan(true)}
+                className="flex-1 text-left px-4 py-4"
+              >
                 <div className="text-[var(--text-1)] text-base">{t.selectPrinter}</div>
                 <div className="text-[var(--text-3)] text-xs mt-0.5">
                   {printConfig.printerName ?? t.noPrinter}
                 </div>
-              </div>
-              <span className="text-[var(--text-4)] text-sm">›</span>
-            </button>
+              </button>
+              {printConfig.printerAddress ? (
+                <button
+                  onClick={onDisconnect}
+                  className="text-[var(--danger-t)] text-sm font-medium px-4 py-4"
+                >
+                  {t.disconnect}
+                </button>
+              ) : (
+                <span className="text-[var(--text-4)] text-sm pr-4">›</span>
+              )}
+            </div>
 
             {/* Paper width */}
             <div className="px-4 py-3 border-b border-[var(--border)]">
