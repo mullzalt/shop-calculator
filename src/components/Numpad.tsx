@@ -38,7 +38,7 @@ const KEYS: Key[][] = [
     { label: "+", value: "+", accent: true },
   ],
   [
-    { label: "00", value: "00" },
+    { label: ".", value: "." },
     { label: "0", value: "0" },
     { label: "⌫", value: "DEL" },
     { label: "=", value: "=" },

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import { getCustomer, updateCustomerName, deleteCustomer } from '../db/customers'
 import { useTransactions } from '../hooks/useTransactions'
 import { updateTransaction, deleteTransaction } from '../db/transactions'
@@ -100,8 +101,10 @@ export function CustomerDetail() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
-        <button onClick={() => navigate('/customers')} className="text-[var(--accent)] text-sm">← {t.customersTitle}</button>
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
+        <button onClick={() => navigate('/customers')} className="text-[var(--accent)] p-1 -ml-1">
+          <ChevronLeft size={24} />
+        </button>
         <span className="text-[var(--text-1)] font-semibold flex-1">{t.customerDetail}</span>
       </header>
 

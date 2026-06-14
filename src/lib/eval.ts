@@ -10,7 +10,7 @@ export function evalExpression(expr: string): number | null {
   try {
     const result = evaluate(normalize(expr))
     if (typeof result !== 'number' || !isFinite(result)) return null
-    return Math.round(result)
+    return result
   } catch {
     return null
   }

@@ -10,7 +10,7 @@ export const migrations: string[] = [
   CREATE TABLE IF NOT EXISTS transactions (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
-    amount      INTEGER NOT NULL,
+    amount      REAL    NOT NULL,
     expression  TEXT    NOT NULL,
     note        TEXT,
     paid        INTEGER NOT NULL DEFAULT 1,
@@ -18,6 +18,24 @@ export const migrations: string[] = [
     updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE INDEX IF NOT EXISTS idx_transactions_customer ON transactions(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_transactions_created  ON transactions(created_at);
+  `,
+  // v2: migrate amount column from INTEGER to REAL for decimal support
+  `
+  CREATE TABLE transactions_v2 (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+    amount      REAL    NOT NULL,
+    expression  TEXT    NOT NULL,
+    note        TEXT,
+    paid        INTEGER NOT NULL DEFAULT 1,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+  INSERT INTO transactions_v2 SELECT * FROM transactions;
+  DROP TABLE transactions;
+  ALTER TABLE transactions_v2 RENAME TO transactions;
   CREATE INDEX IF NOT EXISTS idx_transactions_customer ON transactions(customer_id);
   CREATE INDEX IF NOT EXISTS idx_transactions_created  ON transactions(created_at);
   `,

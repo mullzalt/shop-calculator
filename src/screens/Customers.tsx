@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import { useCustomers } from '../hooks/useCustomers'
 import { createCustomer } from '../db/customers'
 import { useSettings } from '../context/SettingsContext'
@@ -39,8 +40,10 @@ export function Customers() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
-        <button onClick={() => navigate('/')} className="text-[var(--accent)] text-sm">← {t.appName}</button>
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
+        <button onClick={() => navigate('/')} className="text-[var(--accent)] p-1 -ml-1">
+          <ChevronLeft size={24} />
+        </button>
         <span className="text-[var(--text-1)] font-semibold flex-1">{t.customersTitle}</span>
       </header>
 

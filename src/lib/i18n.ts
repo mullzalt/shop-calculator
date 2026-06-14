@@ -69,6 +69,27 @@ const translations = {
     exportColExpr: 'Ekspresi',
     exportColAmount: 'Jumlah',
     exportReportTitle: 'Laporan Transaksi',
+    saveAndPrint: 'Simpan & Cetak',
+    printer: 'Printer',
+    selectPrinter: 'Pilih Printer',
+    noPrinter: 'Belum dipilih',
+    scanPrinter: 'Cari Printer…',
+    scanning: 'Memindai…',
+    noDevicesFound: 'Tidak ada perangkat ditemukan',
+    paperWidth: 'Lebar Kertas (mm)',
+    headerText: 'Teks Header',
+    footerText: 'Teks Footer',
+    showDateTime: 'Tampilkan Tanggal & Waktu',
+    showCustomer: 'Tampilkan Pelanggan',
+    currency: 'Mata Uang',
+    currencySymbol: 'Simbol',
+    symbolPrefix: 'Awalan (Rp 100)',
+    symbolSuffix: 'Akhiran (100 Rp)',
+    decimalPlaces: 'Desimal',
+    printError: 'Gagal mencetak',
+    printing: 'Mencetak…',
+    printed: 'Tercetak ✓',
+    disconnect: 'Putuskan',
   },
   en: {
     appName: 'Shop Calc',
@@ -138,6 +159,27 @@ const translations = {
     exportColExpr: 'Expression',
     exportColAmount: 'Amount',
     exportReportTitle: 'Transaction Report',
+    saveAndPrint: 'Save & Print',
+    printer: 'Printer',
+    selectPrinter: 'Select Printer',
+    noPrinter: 'Not selected',
+    scanPrinter: 'Scan for Printers…',
+    scanning: 'Scanning…',
+    noDevicesFound: 'No devices found',
+    paperWidth: 'Paper Width (mm)',
+    headerText: 'Header Text',
+    footerText: 'Footer Text',
+    showDateTime: 'Show Date & Time',
+    showCustomer: 'Show Customer',
+    currency: 'Currency',
+    currencySymbol: 'Symbol',
+    symbolPrefix: 'Prefix (Rp 100)',
+    symbolSuffix: 'Suffix (100 Rp)',
+    decimalPlaces: 'Decimal places',
+    printError: 'Print failed',
+    printing: 'Printing…',
+    printed: 'Printed ✓',
+    disconnect: 'Disconnect',
   },
 } as const
 
@@ -153,7 +195,10 @@ export function getTranslations(locale: Locale): Translations {
 }
 
 export function formatAmount(n: number, locale: Locale): string {
-  return n.toLocaleString(locale === 'id' ? 'id-ID' : 'en-US')
+  return n.toLocaleString(locale === 'id' ? 'id-ID' : 'en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function formatCurrency(n: number, locale: Locale): string {
@@ -169,4 +214,14 @@ export function formatDateTime(iso: string, locale: Locale): string {
 
 export function formatDate(iso: string, locale: Locale): string {
   return new Date(iso).toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-US')
+}
+
+import type { CurrencyConfig } from '../context/SettingsContext'
+
+export function formatPrintAmount(n: number, cfg: CurrencyConfig): string {
+  const num = n.toLocaleString('id-ID', {
+    minimumFractionDigits: cfg.decimalPlaces,
+    maximumFractionDigits: cfg.decimalPlaces,
+  })
+  return cfg.symbolPosition === 'prefix' ? `${cfg.symbol} ${num}` : `${num} ${cfg.symbol}`
 }
