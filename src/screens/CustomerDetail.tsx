@@ -249,6 +249,7 @@ export function CustomerDetail() {
           selected={editState.customer}
           onSelect={c => setEditState(s => s ? { ...s, customer: c, customer_id: c ? String(c.id) : '' } : s)}
           onClose={() => setShowEditCustomer(false)}
+          allowCreate
         />
       )}
     </div>

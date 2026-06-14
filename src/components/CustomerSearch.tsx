@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCustomers } from '../hooks/useCustomers'
+import { createCustomer } from '../db/customers'
 import { useSettings } from '../context/SettingsContext'
 import { getTranslations, formatCurrency } from '../lib/i18n'
 import type { Customer } from '../db/customers'
@@ -8,11 +9,13 @@ interface CustomerSearchProps {
   onSelect: (customer: Customer | null) => void
   onClose: () => void
   selected: Customer | null
+  allowCreate?: boolean
 }
 
-export function CustomerSearch({ onSelect, onClose, selected }: CustomerSearchProps) {
+export function CustomerSearch({ onSelect, onClose, selected, allowCreate = false }: CustomerSearchProps) {
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
+  const [creating, setCreating] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const { customers, loading } = useCustomers(debounced)
   const { locale } = useSettings()
@@ -26,6 +29,19 @@ export function CustomerSearch({ onSelect, onClose, selected }: CustomerSearchPr
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  async function handleCreate() {
+    const name = query.trim()
+    if (!name || creating) return
+    setCreating(true)
+    try {
+      const id = await createCustomer(name)
+      onSelect({ id, name, created_at: new Date().toISOString() })
+      onClose()
+    } finally {
+      setCreating(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-[var(--bg-overlay)] flex flex-col">
@@ -73,6 +89,18 @@ export function CustomerSearch({ onSelect, onClose, selected }: CustomerSearchPr
 
         {!loading && customers.length === 0 && debounced && (
           <div className="text-center py-10 text-[var(--text-3)]">{t.noCustomersFound(debounced)}</div>
+        )}
+
+        {allowCreate && debounced.trim() && (
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className="w-full text-left px-5 py-4 border-t border-[var(--border)] flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className="text-[var(--accent)] text-sm font-medium">
+              + {t.addCustomer} "{debounced.trim()}"
+            </span>
+          </button>
         )}
       </div>
     </div>

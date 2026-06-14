@@ -173,6 +173,7 @@ export function Confirm() {
           selected={customer}
           onSelect={setCustomer}
           onClose={() => setShowSearch(false)}
+          allowCreate
         />
       )}
 

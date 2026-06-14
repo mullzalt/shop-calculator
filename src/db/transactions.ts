@@ -27,9 +27,13 @@ export async function listTransactions(
   const conditions: string[] = []
   const params: (string | number)[] = []
 
-  if (filter.customerId !== undefined && filter.customerId !== null) {
-    conditions.push('t.customer_id = ?')
-    params.push(filter.customerId)
+  if (filter.customerId !== undefined) {
+    if (filter.customerId === null) {
+      conditions.push('t.customer_id IS NULL')
+    } else {
+      conditions.push('t.customer_id = ?')
+      params.push(filter.customerId)
+    }
   }
   if (filter.dateFrom) {
     conditions.push("date(t.created_at) >= date(?)")
@@ -60,9 +64,13 @@ export async function countTransactions(filter: TransactionFilter = {}): Promise
   const conditions: string[] = []
   const params: (string | number)[] = []
 
-  if (filter.customerId !== undefined && filter.customerId !== null) {
-    conditions.push('customer_id = ?')
-    params.push(filter.customerId)
+  if (filter.customerId !== undefined) {
+    if (filter.customerId === null) {
+      conditions.push('customer_id IS NULL')
+    } else {
+      conditions.push('customer_id = ?')
+      params.push(filter.customerId)
+    }
   }
   if (filter.dateFrom) {
     conditions.push("date(created_at) >= date(?)")
@@ -83,9 +91,13 @@ export async function sumTransactions(filter: TransactionFilter = {}): Promise<n
   const conditions: string[] = []
   const params: (string | number)[] = []
 
-  if (filter.customerId !== undefined && filter.customerId !== null) {
-    conditions.push('customer_id = ?')
-    params.push(filter.customerId)
+  if (filter.customerId !== undefined) {
+    if (filter.customerId === null) {
+      conditions.push('customer_id IS NULL')
+    } else {
+      conditions.push('customer_id = ?')
+      params.push(filter.customerId)
+    }
   }
   if (filter.dateFrom) {
     conditions.push("date(created_at) >= date(?)")

@@ -90,6 +90,8 @@ const translations = {
     printing: 'Mencetak…',
     printed: 'Tercetak ✓',
     disconnect: 'Putuskan',
+    walkinOnly: 'Tanpa pelanggan',
+    byCustomer: 'Pilih pelanggan',
   },
   en: {
     appName: 'Shop Calc',
@@ -180,6 +182,8 @@ const translations = {
     printing: 'Printing…',
     printed: 'Printed ✓',
     disconnect: 'Disconnect',
+    walkinOnly: 'Walk-in only',
+    byCustomer: 'By customer',
   },
 } as const
 

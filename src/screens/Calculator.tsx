@@ -53,6 +53,12 @@ function calcReducer(state: CalcState, action: CalcAction): CalcState {
         if (token === '') return { ...state, expression: state.expression + '0.' }
         return { ...state, expression: state.expression + '.' }
       }
+      if (key === '00') {
+        if (!state.expression) return state
+        const lastTokenIsZero = /(?:^|[+\-×÷−(])0$/.test(state.expression)
+        if (lastTokenIsZero) return state
+        return { ...state, expression: state.expression + '00' }
+      }
       const isDigit = /^[0-9]$/.test(key)
       const lastTokenIsZero = /(?:^|[+\-×÷−(])0$/.test(state.expression)
       if (isDigit && lastTokenIsZero) {
@@ -203,6 +209,7 @@ export function Calculator() {
           selected={state.customer}
           onSelect={c => dispatch({ type: 'setCustomer', customer: c })}
           onClose={() => setShowSearch(false)}
+          allowCreate
         />
       )}
     </div>

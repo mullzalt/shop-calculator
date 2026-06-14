@@ -28,8 +28,11 @@ interface EditState {
 
 export function History() {
   const navigate = useNavigate()
+  type CustomerFilterMode = 'all' | 'walkin' | 'customer'
+
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState(todayISO())
+  const [customerFilterMode, setCustomerFilterMode] = useState<CustomerFilterMode>('all')
   const [filterCustomer, setFilterCustomer] = useState<Customer | null>(null)
   const [showCustomerFilter, setShowCustomerFilter] = useState(false)
   const [page, setPage] = useState(0)
@@ -84,7 +87,9 @@ export function History() {
   }
 
   const filter: TransactionFilter = {
-    customerId: filterCustomer?.id ?? undefined,
+    customerId: customerFilterMode === 'all' ? undefined
+              : customerFilterMode === 'walkin' ? null
+              : filterCustomer?.id,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
   }
@@ -123,7 +128,9 @@ export function History() {
   const filterLabel = [
     dateFrom && `${t.filterFrom} ${dateFrom}`,
     dateTo && `${t.filterTo} ${dateTo}`,
-    filterCustomer?.name,
+    customerFilterMode === 'walkin' ? t.walkinOnly
+    : customerFilterMode === 'customer' && filterCustomer ? filterCustomer.name
+    : null,
   ].filter(Boolean).join(' · ')
 
   const totalPages = Math.ceil(total / pageSize)
@@ -164,15 +171,29 @@ export function History() {
         </div>
         <div>
           <label className="text-[var(--text-3)] text-xs block mb-1">{t.filterCustomer}</label>
-          <button
-            onClick={() => setShowCustomerFilter(true)}
-            className="w-full bg-[var(--bg-card)] text-[var(--text-1)] rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between"
-          >
-            <span className={filterCustomer ? 'text-[var(--accent-txt)]' : 'text-[var(--text-3)]'}>
-              {filterCustomer ? filterCustomer.name : t.allCustomers}
-            </span>
-            <span className="text-[var(--text-4)] text-xs">▾</span>
-          </button>
+          <div className="flex gap-2">
+            {(['all', 'walkin', 'customer'] as CustomerFilterMode[]).map(mode => {
+              const label = mode === 'all' ? t.allCustomers
+                          : mode === 'walkin' ? t.walkinOnly
+                          : filterCustomer ? filterCustomer.name : t.byCustomer
+              const active = customerFilterMode === mode
+              return (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    setCustomerFilterMode(mode)
+                    setPage(0)
+                    if (mode === 'customer') setShowCustomerFilter(true)
+                  }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-medium truncate transition-colors ${
+                    active ? 'bg-[var(--accent-bg)] text-white' : 'bg-[var(--bg-card)] text-[var(--text-1)]'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -312,7 +333,10 @@ export function History() {
         <CustomerSearch
           selected={filterCustomer}
           onSelect={c => { setFilterCustomer(c); setPage(0) }}
-          onClose={() => setShowCustomerFilter(false)}
+          onClose={() => {
+            setShowCustomerFilter(false)
+            if (!filterCustomer) setCustomerFilterMode('all')
+          }}
         />
       )}
 
