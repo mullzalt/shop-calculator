@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChevronLeft, Download } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransactions'
 import { updateTransaction, deleteTransaction } from '../db/transactions'
 import type { Transaction, TransactionFilter } from '../db/transactions'
@@ -82,14 +83,13 @@ export function History() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
-        <button onClick={() => navigate('/')} className="text-[var(--accent)] text-sm">← {t.appName}</button>
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
+        <button onClick={() => navigate('/')} className="text-[var(--accent)] p-1 -ml-1">
+          <ChevronLeft size={24} />
+        </button>
         <span className="text-[var(--text-1)] font-semibold flex-1">{t.historyTitle}</span>
-        <button
-          onClick={() => setShowExport(true)}
-          className="text-[var(--accent)] text-sm font-medium"
-        >
-          {t.export}
+        <button onClick={() => setShowExport(true)} className="text-[var(--accent)] p-2">
+          <Download size={22} />
         </button>
       </header>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import { CustomerSearch } from '../components/CustomerSearch'
 import { createTransaction } from '../db/transactions'
 import { useSettings } from '../context/SettingsContext'
@@ -54,9 +55,9 @@ export function Confirm() {
       <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
         <button
           onClick={() => navigate('/', { state: { restore: session } })}
-          className="text-[var(--accent)] text-sm font-medium"
+          className="text-[var(--accent)] p-1 -ml-1"
         >
-          {t.backToEdit}
+          <ChevronLeft size={24} />
         </button>
         <span className="text-[var(--text-3)] text-sm flex-1 text-right">{t.confirmTitle}</span>
       </header>

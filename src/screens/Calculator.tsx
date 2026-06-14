@@ -1,5 +1,6 @@
 import { useReducer, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Calculator as CalcIcon, History as HistoryIcon, Users, Settings as SettingsIcon } from 'lucide-react'
 import { Numpad } from '../components/Numpad'
 import { CustomerSearch } from '../components/CustomerSearch'
 import { evalExpression } from '../lib/eval'
@@ -125,25 +126,18 @@ export function Calculator() {
     <div className="flex flex-col h-full">
       {/* Nav bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-        <span className="text-[var(--text-1)] font-semibold text-lg">{t.appName}</span>
-        <div className="flex gap-4">
-          <button
-            onClick={() => navigate('/history')}
-            className="text-[var(--accent)] text-sm font-medium"
-          >
-            {t.history}
+        <button onClick={() => navigate('/')} className="text-[var(--text-1)] p-1">
+          <CalcIcon size={24} />
+        </button>
+        <div className="flex gap-1">
+          <button onClick={() => navigate('/history')} className="text-[var(--accent)] p-2">
+            <HistoryIcon size={22} />
           </button>
-          <button
-            onClick={() => navigate('/customers')}
-            className="text-[var(--accent)] text-sm font-medium"
-          >
-            {t.customers}
+          <button onClick={() => navigate('/customers')} className="text-[var(--accent)] p-2">
+            <Users size={22} />
           </button>
-          <button
-            onClick={() => navigate('/settings')}
-            className="text-[var(--accent)] text-sm font-medium"
-          >
-            {t.settings}
+          <button onClick={() => navigate('/settings')} className="text-[var(--accent)] p-2">
+            <SettingsIcon size={22} />
           </button>
         </div>
       </header>

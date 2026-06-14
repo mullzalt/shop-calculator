@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import { useSettings } from '../context/SettingsContext'
 import { getTranslations } from '../lib/i18n'
 import type { Locale, ThemePreference } from '../context/SettingsContext'
@@ -10,9 +11,9 @@ export function Settings() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
-        <button onClick={() => navigate(-1)} className="text-[var(--accent)] text-sm font-medium">
-          ← {t.back}
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
+        <button onClick={() => navigate(-1)} className="text-[var(--accent)] p-1 -ml-1">
+          <ChevronLeft size={24} />
         </button>
         <span className="text-[var(--text-1)] font-semibold flex-1">{t.settingsTitle}</span>
       </header>
