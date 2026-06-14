@@ -19,6 +19,7 @@
     "@capacitor/core": "^8.4.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/share": "^8.0.1",
+    "capacitor-thermal-printer": "^0.2.5",
     "jeep-sqlite": "^2.8.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",

@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Download } from 'lucide-react'
+import { ChevronLeft, Download, Printer } from 'lucide-react'
+import type { BluetoothDevice } from 'capacitor-thermal-printer'
 import { useTransactions } from '../hooks/useTransactions'
 import { updateTransaction, deleteTransaction } from '../db/transactions'
 import type { Transaction, TransactionFilter } from '../db/transactions'
 import { ExportModal } from '../components/ExportModal'
 import { CustomerSearch } from '../components/CustomerSearch'
+import { BluetoothScanModal } from '../components/BluetoothScanModal'
 import { useSettings } from '../context/SettingsContext'
+import { useToast } from '../context/ToastContext'
 import { getTranslations, formatAmount, formatDateTime } from '../lib/i18n'
+import { printReceipt } from '../lib/print'
 import type { Customer } from '../db/customers'
 
 function todayISO() {
@@ -33,8 +37,51 @@ export function History() {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [showEditCustomer, setShowEditCustomer] = useState(false)
 
-  const { locale } = useSettings()
+  const { locale, currencyConfig, printConfig, setPrintConfig } = useSettings()
+  const { showToast } = useToast()
   const t = getTranslations(locale)
+
+  const [printingId, setPrintingId] = useState<number | null>(null)
+  const [showPrinterScan, setShowPrinterScan] = useState(false)
+  const [pendingTx, setPendingTx] = useState<Transaction | null>(null)
+
+  async function doPrint(tx: Transaction, printerAddress: string) {
+    setPrintingId(tx.id)
+    try {
+      await printReceipt({
+        amount: tx.amount,
+        customer: tx.customer_name ?? null,
+        createdAt: tx.created_at,
+        printConfig: { ...printConfig, printerAddress },
+        currencyConfig,
+      })
+      showToast(t.printed)
+    } catch {
+      showToast(t.printError)
+    } finally {
+      setPrintingId(null)
+    }
+  }
+
+  async function handlePrint(tx: Transaction) {
+    if (!printConfig.printerAddress) {
+      setPendingTx(tx)
+      setShowPrinterScan(true)
+      return
+    }
+    await doPrint(tx, printConfig.printerAddress)
+  }
+
+  async function onPrinterSelected(device: BluetoothDevice) {
+    const updated = { ...printConfig, printerAddress: device.address, printerName: device.name }
+    setPrintConfig(updated)
+    setShowPrinterScan(false)
+    if (pendingTx) {
+      const tx = pendingTx
+      setPendingTx(null)
+      await doPrint(tx, device.address)
+    }
+  }
 
   const filter: TransactionFilter = {
     customerId: filterCustomer?.id ?? undefined,
@@ -147,19 +194,28 @@ export function History() {
         )}
         {transactions.map(tx => (
           <div key={tx.id} className="border-b border-[var(--border)]">
-            <button
-              onClick={() => { setEditState(null); startEdit(tx) }}
-              className="w-full text-left px-4 py-3 flex items-start justify-between gap-2"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="text-[var(--text-1)] font-semibold text-base">{formatAmount(tx.amount, locale)}</div>
-                <div className="text-[var(--text-3)] text-xs font-mono truncate">{tx.expression}</div>
-                <div className="text-[var(--text-4)] text-xs mt-0.5">
-                  {tx.customer_name ?? t.walkinLabel} · {formatDateTime(tx.created_at, locale)}
+            <div className="flex items-stretch">
+              <button
+                onClick={() => { setEditState(null); startEdit(tx) }}
+                className="flex-1 text-left px-4 py-3 flex items-start gap-2 min-w-0"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-[var(--text-1)] font-semibold text-base">{formatAmount(tx.amount, locale)}</div>
+                  <div className="text-[var(--text-3)] text-xs font-mono truncate">{tx.expression}</div>
+                  <div className="text-[var(--text-4)] text-xs mt-0.5">
+                    {tx.customer_name ?? t.walkinLabel} · {formatDateTime(tx.created_at, locale)}
+                  </div>
                 </div>
-              </div>
-              <span className="text-[var(--text-4)] text-xs mt-1">{t.edit}</span>
-            </button>
+                <span className="text-[var(--text-4)] text-xs mt-1 shrink-0">{t.edit}</span>
+              </button>
+              <button
+                onClick={() => handlePrint(tx)}
+                disabled={printingId === tx.id}
+                className="px-3 flex items-center text-[var(--text-3)] disabled:opacity-40 shrink-0"
+              >
+                <Printer size={18} />
+              </button>
+            </div>
 
             {editState?.id === tx.id && (
               <div className="px-4 pb-4 space-y-2 bg-[var(--bg-card)]">
@@ -265,6 +321,14 @@ export function History() {
           selected={editState.customer}
           onSelect={c => setEditState(s => s ? { ...s, customer: c, customer_id: c ? String(c.id) : '' } : s)}
           onClose={() => setShowEditCustomer(false)}
+        />
+      )}
+
+      {showPrinterScan && (
+        <BluetoothScanModal
+          t={t}
+          onSelect={onPrinterSelected}
+          onClose={() => { setShowPrinterScan(false); setPendingTx(null) }}
         />
       )}
     </div>
