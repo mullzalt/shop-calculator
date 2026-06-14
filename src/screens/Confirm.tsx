@@ -51,7 +51,7 @@ export function Confirm() {
     <div className="flex flex-col h-full">
       <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/', { state: { restore: session } })}
           className="text-[var(--accent)] text-sm font-medium"
         >
           {t.backToEdit}

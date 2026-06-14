@@ -1,5 +1,5 @@
 import { useReducer, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Numpad } from '../components/Numpad'
 import { CustomerSearch } from '../components/CustomerSearch'
 import { evalExpression } from '../lib/eval'
@@ -7,9 +7,15 @@ import { useSettings } from '../context/SettingsContext'
 import { getTranslations, formatAmount } from '../lib/i18n'
 import type { Customer } from '../db/customers'
 
+interface HistoryEntry {
+  expression: string
+  result: number
+}
+
 interface CalcState {
   expression: string
   customer: Customer | null
+  history: HistoryEntry[]
 }
 
 type CalcAction =
@@ -22,14 +28,26 @@ function calcReducer(state: CalcState, action: CalcAction): CalcState {
     case 'setCustomer':
       return { ...state, customer: action.customer }
     case 'clear':
-      return { expression: '', customer: null }
+      return { expression: '', customer: null, history: [] }
     case 'key': {
       const { key } = action
-      if (key === 'C') return { ...state, expression: '' }
+      if (key === 'C') return { ...state, expression: '', history: [] }
       if (key === 'DEL') return { ...state, expression: state.expression.slice(0, -1) }
       if (key === '=') {
         const r = evalExpression(state.expression)
-        return r !== null ? { ...state, expression: String(r) } : state
+        if (r === null) return state
+        return {
+          ...state,
+          expression: String(r),
+          history: [{ expression: state.expression, result: r }, ...state.history],
+        }
+      }
+      if (key === '.') {
+        const tokenMatch = /(?:^|[+\-×÷−(])(\d*\.?\d*)$/.exec(state.expression)
+        const token = tokenMatch?.[1] ?? ''
+        if (token.includes('.')) return state
+        if (token === '') return { ...state, expression: state.expression + '0.' }
+        return { ...state, expression: state.expression + '.' }
       }
       const isDigit = /^[0-9]$/.test(key)
       const lastTokenIsZero = /(?:^|[+\-×÷−(])0$/.test(state.expression)
@@ -57,7 +75,14 @@ export interface CalcSessionState {
 
 export function Calculator() {
   const navigate = useNavigate()
-  const [state, dispatch] = useReducer(calcReducer, { expression: '', customer: null })
+  const location = useLocation()
+  const restored = (location.state as { restore?: CalcSessionState } | null)?.restore
+
+  const [state, dispatch] = useReducer(calcReducer, {
+    expression: restored?.expression ?? '',
+    customer:   restored?.customer   ?? null,
+    history:    [],
+  })
   const [showSearch, setShowSearch] = useState(false)
   const { locale } = useSettings()
   const t = getTranslations(locale)
@@ -129,8 +154,20 @@ export function Calculator() {
         </button>
       </div>
 
+      {/* Session history */}
+      {state.history.length > 0 && (
+        <div className="overflow-y-auto max-h-32 flex flex-col-reverse px-5 pt-1 pb-1 border-b border-[var(--border)]">
+          {state.history.map((h, i) => (
+            <div key={i} className="text-right py-1 border-b border-[var(--border)] last:border-0">
+              <div className="text-[var(--text-4)] text-xs font-mono truncate">{h.expression}</div>
+              <div className="text-[var(--text-2)] text-sm font-mono">{formatAmount(h.result, locale)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Expression display */}
-      <div className="flex-1 flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
+      <div className="flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
         <div className="w-full overflow-hidden text-right">
           <span className={`text-[var(--text-1)] font-mono tracking-tight whitespace-nowrap ${exprFontSize(state.expression)}`}>
             {state.expression || <span className="text-[var(--text-4)]">0</span>}

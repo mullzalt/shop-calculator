@@ -153,7 +153,10 @@ export function getTranslations(locale: Locale): Translations {
 }
 
 export function formatAmount(n: number, locale: Locale): string {
-  return n.toLocaleString(locale === 'id' ? 'id-ID' : 'en-US')
+  return n.toLocaleString(locale === 'id' ? 'id-ID' : 'en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function formatCurrency(n: number, locale: Locale): string {
