@@ -22,6 +22,7 @@ export function Confirm() {
     return () => clearTimeout(t)
   }, [])
 
+
   const { locale } = useSettings()
   const { showToast } = useToast()
   const t = getTranslations(locale)
@@ -40,6 +41,7 @@ export function Confirm() {
         amount: session.amount,
         expression: session.expression,
       })
+      sessionStorage.removeItem('calc_draft')
       showToast(t.toastSaved(formatCurrency(session.amount, locale)))
       navigate('/', { replace: true })
     } finally {

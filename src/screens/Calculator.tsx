@@ -22,6 +22,7 @@ type CalcAction =
   | { type: 'key'; key: string }
   | { type: 'setCustomer'; customer: Customer | null }
   | { type: 'clear' }
+  | { type: 'restore'; expression: string }
 
 function calcReducer(state: CalcState, action: CalcAction): CalcState {
   switch (action.type) {
@@ -29,6 +30,8 @@ function calcReducer(state: CalcState, action: CalcAction): CalcState {
       return { ...state, customer: action.customer }
     case 'clear':
       return { expression: '', customer: null, history: [] }
+    case 'restore':
+      return { ...state, expression: action.expression }
     case 'key': {
       const { key } = action
       if (key === 'C') return { ...state, expression: '', history: [] }
@@ -76,12 +79,22 @@ export interface CalcSessionState {
 export function Calculator() {
   const navigate = useNavigate()
   const location = useLocation()
-  const restored = (location.state as { restore?: CalcSessionState } | null)?.restore
 
-  const [state, dispatch] = useReducer(calcReducer, {
-    expression: restored?.expression ?? '',
-    customer:   restored?.customer   ?? null,
-    history:    [],
+  const [state, dispatch] = useReducer(calcReducer, location, (loc): CalcState => {
+    const restored = (loc.state as { restore?: CalcSessionState } | null)?.restore
+    if (restored) {
+      sessionStorage.removeItem('calc_draft')
+      return { expression: restored.expression, customer: restored.customer, history: [] }
+    }
+    const raw = sessionStorage.getItem('calc_draft')
+    if (raw) {
+      sessionStorage.removeItem('calc_draft')
+      try {
+        const { expression, customer } = JSON.parse(raw)
+        return { expression: expression ?? '', customer: customer ?? null, history: [] }
+      } catch { /* ignore malformed */ }
+    }
+    return { expression: '', customer: null, history: [] }
   })
   const [showSearch, setShowSearch] = useState(false)
   const { locale } = useSettings()
@@ -101,6 +114,10 @@ export function Calculator() {
       customer: state.customer,
       amount: result,
     }
+    sessionStorage.setItem('calc_draft', JSON.stringify({
+      expression: state.expression,
+      customer: state.customer ? { id: state.customer.id, name: state.customer.name } : null,
+    }))
     navigate('/confirm', { state: session })
   }
 
@@ -158,16 +175,20 @@ export function Calculator() {
       {state.history.length > 0 && (
         <div className="overflow-y-auto max-h-32 flex flex-col-reverse px-5 pt-1 pb-1 border-b border-[var(--border)]">
           {state.history.map((h, i) => (
-            <div key={i} className="text-right py-1 border-b border-[var(--border)] last:border-0">
+            <button
+              key={i}
+              onPointerDown={e => { e.preventDefault(); dispatch({ type: 'restore', expression: h.expression }) }}
+              className="w-full text-right py-1 border-b border-[var(--border)] last:border-0 active:opacity-60"
+            >
               <div className="text-[var(--text-4)] text-xs font-mono truncate">{h.expression}</div>
               <div className="text-[var(--text-2)] text-sm font-mono">{formatAmount(h.result, locale)}</div>
-            </div>
+            </button>
           ))}
         </div>
       )}
 
       {/* Expression display */}
-      <div className="flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
+      <div className="flex-1 flex flex-col items-end justify-end px-5 py-4 min-h-[120px]">
         <div className="w-full overflow-hidden text-right">
           <span className={`text-[var(--text-1)] font-mono tracking-tight whitespace-nowrap ${exprFontSize(state.expression)}`}>
             {state.expression || <span className="text-[var(--text-4)]">0</span>}
