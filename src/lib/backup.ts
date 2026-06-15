@@ -91,15 +91,19 @@ export async function importBackup(
     await db.execute('DELETE FROM customers')
   }
 
-  // Insert customers and build old→new ID map
+  // Build old→new ID map, deduplicating by name
   const idMap = new Map<number, number>()
   for (const c of parsed.customers) {
-    const result = await db.run(
-      'INSERT INTO customers (name, created_at) VALUES (?, ?)',
-      [c.name, c.created_at],
-    )
-    const newId = result.changes?.lastId
-    if (newId != null) idMap.set(c.id, newId)
+    const existing = await db.query('SELECT id FROM customers WHERE name = ?', [c.name])
+    if (existing.values?.length) {
+      idMap.set(c.id, existing.values[0].id as number)
+    } else {
+      const result = await db.run(
+        'INSERT INTO customers (name, created_at) VALUES (?, ?)',
+        [c.name, c.created_at],
+      )
+      if (result.changes?.lastId != null) idMap.set(c.id, result.changes.lastId)
+    }
   }
 
   // Insert transactions with remapped customer_ids

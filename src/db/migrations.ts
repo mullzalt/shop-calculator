@@ -39,4 +39,11 @@ export const migrations: string[] = [
   CREATE INDEX IF NOT EXISTS idx_transactions_customer ON transactions(customer_id);
   CREATE INDEX IF NOT EXISTS idx_transactions_created  ON transactions(created_at);
   `,
+  // v2: unique customer names — dedup existing rows then add constraint
+  `
+  DELETE FROM customers WHERE id NOT IN (
+    SELECT MIN(id) FROM customers GROUP BY name
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
+  `,
 ]
