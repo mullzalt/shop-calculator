@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import { CapacitorThermalPrinter } from 'capacitor-thermal-printer'
 import type { BluetoothDevice } from 'capacitor-thermal-printer'
 import { BluetoothScanModal } from '../components/BluetoothScanModal'
 import { useSettings } from '../context/SettingsContext'
+import { useToast } from '../context/ToastContext'
 import { getTranslations } from '../lib/i18n'
+import { exportBackup, importBackup, parseBackupPreview } from '../lib/backup'
 import type { Locale, ThemePreference, CurrencyConfig, PrintConfig } from '../context/SettingsContext'
 
 function SectionHeader({ label }: { label: string }) {
@@ -38,9 +40,16 @@ function ToggleRow({
   )
 }
 
+interface ImportPreview {
+  file: File
+  customers: number
+  transactions: number
+}
+
 export function Settings() {
   const navigate = useNavigate()
   const { locale, theme, currencyConfig, printConfig, setLocale, setTheme, setCurrencyConfig, setPrintConfig } = useSettings()
+  const { showToast } = useToast()
   const t = getTranslations(locale)
 
   const [showScan, setShowScan] = useState(false)
@@ -50,6 +59,9 @@ export function Settings() {
       : ''
   )
   const isCustomWidth = printConfig.paperWidth !== 58 && printConfig.paperWidth !== 80
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function updateCurrency(patch: Partial<CurrencyConfig>) {
     setCurrencyConfig({ ...currencyConfig, ...patch })
@@ -67,6 +79,41 @@ export function Settings() {
   async function onDisconnect() {
     await CapacitorThermalPrinter.disconnect().catch(() => {})
     updatePrint({ printerAddress: null, printerName: null })
+  }
+
+  async function handleExport() {
+    try {
+      await exportBackup()
+    } catch {
+      showToast(t.importError)
+    }
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const preview = await parseBackupPreview(file)
+      setImportPreview({ file, ...preview })
+    } catch {
+      showToast(t.importError)
+    }
+  }
+
+  async function handleImport(mode: 'merge' | 'replace') {
+    if (!importPreview) return
+    if (mode === 'replace' && !window.confirm(t.importConfirmReplace)) return
+    setImporting(true)
+    try {
+      const result = await importBackup(importPreview.file, mode)
+      showToast(t.importSuccess(result.customers, result.transactions))
+    } catch {
+      showToast(t.importError)
+    } finally {
+      setImporting(false)
+      setImportPreview(null)
+    }
   }
 
   return (
@@ -281,6 +328,65 @@ export function Settings() {
               />
             </div>
           </div>
+        </section>
+
+        {/* Data backup */}
+        <section>
+          <SectionHeader label={t.dataBackup} />
+          <div className="bg-[var(--bg-card)] rounded-2xl overflow-hidden">
+            <button
+              onClick={handleExport}
+              className="w-full text-left px-4 py-4 border-b border-[var(--border)] flex items-center justify-between"
+            >
+              <span className="text-[var(--text-1)] text-base">{t.exportBackup}</span>
+              <span className="text-[var(--text-4)] text-sm">›</span>
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full text-left px-4 py-4 flex items-center justify-between"
+            >
+              <span className="text-[var(--text-1)] text-base">{t.importBackup}</span>
+              <span className="text-[var(--text-4)] text-sm">›</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleFileSelected}
+            />
+          </div>
+
+          {importPreview && (
+            <div className="mt-3 bg-[var(--bg-card)] rounded-2xl p-4 space-y-3">
+              <div className="text-[var(--text-1)] text-sm font-medium">
+                {t.importSuccess(importPreview.customers, importPreview.transactions)}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleImport('merge')}
+                  disabled={importing}
+                  className="flex-1 bg-[var(--accent-bg)] disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-medium"
+                >
+                  {t.importMerge}
+                </button>
+                <button
+                  onClick={() => handleImport('replace')}
+                  disabled={importing}
+                  className="flex-1 bg-[var(--danger-bg)] disabled:opacity-50 text-[var(--danger-t)] rounded-xl py-2.5 text-sm font-medium"
+                >
+                  {t.importReplace}
+                </button>
+                <button
+                  onClick={() => setImportPreview(null)}
+                  disabled={importing}
+                  className="px-4 bg-[var(--bg-input)] text-[var(--text-3)] rounded-xl py-2.5 text-sm"
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       </div>
 

@@ -13,48 +13,59 @@ export async function printReceipt(opts: {
 
   if (!printConfig.printerAddress) throw new Error('No printer configured')
 
-  await CapacitorThermalPrinter.connect({ address: printConfig.printerAddress })
-
   const sepLen = Math.min(Math.round(printConfig.paperWidth * 0.55), 48)
   const sep = '-'.repeat(sepLen)
 
-  CapacitorThermalPrinter.begin()
+  let lastErr: unknown
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      await CapacitorThermalPrinter.disconnect().catch(() => {})
+      await CapacitorThermalPrinter.connect({ address: printConfig.printerAddress })
 
-  if (printConfig.headerText) {
-    for (const line of printConfig.headerText.split('\n')) {
-      CapacitorThermalPrinter.align('center').text(line + '\n')
+      CapacitorThermalPrinter.begin()
+
+      if (printConfig.headerText) {
+        for (const line of printConfig.headerText.split('\n')) {
+          CapacitorThermalPrinter.align('center').text(line + '\n')
+        }
+        CapacitorThermalPrinter.align('center').text(sep + '\n')
+      }
+
+      CapacitorThermalPrinter
+        .align('center')
+        .doubleWidth(true)
+        .doubleHeight(true)
+        .bold(true)
+        .text(formatPrintAmount(amount, currencyConfig) + '\n')
+        .bold(false)
+        .doubleWidth(false)
+        .doubleHeight(false)
+
+      if (printConfig.showCustomer && customer) {
+        CapacitorThermalPrinter.align('left').text(customer + '\n')
+      }
+
+      if (printConfig.showDateTime) {
+        const dt = new Date(createdAt).toLocaleString('id-ID', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        })
+        CapacitorThermalPrinter.align('left').text(dt + '\n')
+      }
+
+      if (printConfig.footerText) {
+        CapacitorThermalPrinter.align('center').text(sep + '\n')
+        for (const line of printConfig.footerText.split('\n')) {
+          CapacitorThermalPrinter.align('center').text(line + '\n')
+        }
+      }
+
+      await CapacitorThermalPrinter.feedCutPaper().write()
+      return
+    } catch (err) {
+      lastErr = err
+      if (attempt < 2) await new Promise(r => setTimeout(r, 800))
     }
-    CapacitorThermalPrinter.align('center').text(sep + '\n')
   }
-
-  CapacitorThermalPrinter
-    .align('center')
-    .doubleWidth(true)
-    .doubleHeight(true)
-    .bold(true)
-    .text(formatPrintAmount(amount, currencyConfig) + '\n')
-    .bold(false)
-    .doubleWidth(false)
-    .doubleHeight(false)
-
-  if (printConfig.showCustomer && customer) {
-    CapacitorThermalPrinter.align('left').text(customer + '\n')
-  }
-
-  if (printConfig.showDateTime) {
-    const dt = new Date(createdAt).toLocaleString('id-ID', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    })
-    CapacitorThermalPrinter.align('left').text(dt + '\n')
-  }
-
-  if (printConfig.footerText) {
-    CapacitorThermalPrinter.align('center').text(sep + '\n')
-    for (const line of printConfig.footerText.split('\n')) {
-      CapacitorThermalPrinter.align('center').text(line + '\n')
-    }
-  }
-
-  await CapacitorThermalPrinter.feedCutPaper().write()
+  throw lastErr
 }

@@ -23,6 +23,8 @@ export function Confirm() {
   const [pendingPrint, setPendingPrint] = useState(false)
   const [saving, setSaving] = useState(false)
   const [printing, setPrinting] = useState(false)
+  const [printFailed, setPrintFailed] = useState(false)
+  const [savedAddress, setSavedAddress] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 400)
@@ -47,10 +49,11 @@ export function Confirm() {
     sessionStorage.removeItem('calc_draft')
   }
 
-  async function doSaveAndPrint(printerAddress: string) {
+  async function doSaveAndPrint(printerAddress: string, skipSave = false) {
     setSaving(true)
+    setPrintFailed(false)
     try {
-      await doSave()
+      if (!skipSave) await doSave()
       setPrinting(true)
       try {
         await printReceipt({
@@ -61,12 +64,13 @@ export function Confirm() {
           currencyConfig,
         })
         showToast(t.printed)
+        navigate('/', { replace: true })
       } catch {
-        showToast(t.printError)
+        setSavedAddress(printerAddress)
+        setPrintFailed(true)
       } finally {
         setPrinting(false)
       }
-      navigate('/', { replace: true })
     } finally {
       setSaving(false)
     }
@@ -105,6 +109,55 @@ export function Confirm() {
   }
 
   const busy = saving || printing
+
+  if (printFailed) {
+    return (
+      <div className="flex flex-col h-full">
+        <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
+          <button
+            onClick={() => navigate('/', { replace: true })}
+            className="text-[var(--accent)] p-1 -ml-1"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <span className="text-[var(--text-3)] text-sm flex-1 text-right">{t.confirmTitle}</span>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6 text-center">
+          <div className="text-5xl">⚠️</div>
+          <div>
+            <div className="text-[var(--confirm-t)] font-semibold text-lg mb-1">
+              {t.toastSaved(formatCurrency(session.amount, locale))}
+            </div>
+            <div className="text-[var(--danger-t)] text-sm">{t.savedPrintFailed}</div>
+          </div>
+        </div>
+
+        <div className="p-5 flex gap-3">
+          <button
+            onClick={() => navigate('/', { replace: true })}
+            className="flex-1 bg-[var(--bg-card)] text-[var(--text-1)] rounded-2xl py-4 text-base font-semibold"
+          >
+            {t.done}
+          </button>
+          <button
+            onClick={() => savedAddress && doSaveAndPrint(savedAddress, true)}
+            disabled={busy || !savedAddress}
+            className="flex-1 bg-[var(--accent-bg)] disabled:opacity-50 text-white rounded-2xl py-4 text-base font-semibold flex items-center justify-center gap-2"
+          >
+            {printing ? (
+              <span>{t.printing}</span>
+            ) : (
+              <>
+                <Printer size={18} />
+                <span>{t.retryPrint}</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full">
